@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: msa-court-reservation-authentication
+  datasource:
+    url: jdbc:postgresql://localhost:5432/usuarios_db
+    username: postgres
+    password: mysecretpassword
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+jwt:
+  secret: replace-this-64-byte-minimum-jwt-secret-before-production-use-2026-auth
+  expiration: 86400000
+
+springdoc:
+  swagger-ui:
+    enabled: true
+  api-docs:
+    enabled: true
+
+server:
+  port: 8080
