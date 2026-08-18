@@ -3,6 +3,8 @@ package com.courtreservation.authentication.controller;
 import com.courtreservation.authentication.dto.LoginRequest;
 import com.courtreservation.authentication.dto.LoginResponse;
 import com.courtreservation.authentication.dto.RegisterRequest;
+import com.courtreservation.authentication.dto.TokenValidationRequest;
+import com.courtreservation.authentication.dto.TokenValidationResponse;
 import com.courtreservation.authentication.dto.UserResponse;
 import com.courtreservation.authentication.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -50,6 +52,18 @@ public class UserController {
     })
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
         LoginResponse response = userService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/validate-session")
+    @Operation(summary = "Validar token de sesión", description = "Valida un token JWT de sesión y retorna su estado")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Resultado de validación",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = TokenValidationResponse.class))),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    public ResponseEntity<TokenValidationResponse> validateSessionToken(@RequestBody TokenValidationRequest request) {
+        TokenValidationResponse response = userService.validateSessionToken(request.getToken());
         return ResponseEntity.ok(response);
     }
 

@@ -14,6 +14,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -83,6 +84,40 @@ class MsaCourtReservationAuthenticationApplicationTests {
                             }
                             """.formatted(email)))
             .andExpect(status().isOk());
+  }
+
+  @Test
+  void validatesSessionTokenWithoutAuthentication() throws Exception {
+    String token = jwtTokenProvider.generateToken(55L, "validate@example.com", "USUARIO_FINAL");
+
+    mockMvc.perform(post("/api/auth/validate-session")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {
+                              "token": "%s"
+                            }
+                            """.formatted(token)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.valid").value(true))
+            .andExpect(jsonPath("$.userId").value(55))
+            .andExpect(jsonPath("$.userMail").value("validate@example.com"))
+            .andExpect(jsonPath("$.userRole").value("USUARIO_FINAL"));
+  }
+
+  @Test
+  void returnsInvalidWhenSessionTokenIsNotValid() throws Exception {
+    mockMvc.perform(post("/api/auth/validate-session")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {
+                              "token": "token-invalido"
+                            }
+                            """))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.valid").value(false))
+            .andExpect(jsonPath("$.userId").doesNotExist())
+            .andExpect(jsonPath("$.userMail").doesNotExist())
+            .andExpect(jsonPath("$.userRole").doesNotExist());
   }
 
   @Test

@@ -3,6 +3,7 @@ package com.courtreservation.authentication.service.impl;
 import com.courtreservation.authentication.dto.LoginRequest;
 import com.courtreservation.authentication.dto.LoginResponse;
 import com.courtreservation.authentication.dto.RegisterRequest;
+import com.courtreservation.authentication.dto.TokenValidationResponse;
 import com.courtreservation.authentication.dto.UserResponse;
 import com.courtreservation.authentication.model.User;
 import com.courtreservation.authentication.repository.UserRepository;
@@ -58,6 +59,22 @@ public class UserServiceImpl implements UserService {
                 .userName(user.getUserName())
                 .userMail(user.getUserMail())
                 .userRole(user.getUserRole())
+                .build();
+    }
+
+    public TokenValidationResponse validateSessionToken(String token) {
+        String normalizedToken = normalizeToken(token);
+        if (normalizedToken.isEmpty() || !jwtTokenProvider.validateToken(normalizedToken)) {
+            return TokenValidationResponse.builder()
+                    .valid(false)
+                    .build();
+        }
+
+        return TokenValidationResponse.builder()
+                .valid(true)
+                .userId(jwtTokenProvider.extractUserId(normalizedToken))
+                .userMail(jwtTokenProvider.extractUserMail(normalizedToken))
+                .userRole(jwtTokenProvider.extractUserRole(normalizedToken))
                 .build();
     }
 
@@ -121,6 +138,18 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Rol inválido. Debe ser ADMIN o USUARIO_FINAL");
         }
         return normalizedRole;
+    }
+
+    private String normalizeToken(String token) {
+        if (token == null) {
+            return "";
+        }
+
+        String normalizedToken = token.trim();
+        if (normalizedToken.startsWith("Bearer ")) {
+            return normalizedToken.substring("Bearer ".length()).trim();
+        }
+        return normalizedToken;
     }
 
     private UserResponse mapToUserResponse(User user) {
