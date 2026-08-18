@@ -5,6 +5,7 @@ import com.courtreservation.authentication.dto.LoginResponse;
 import com.courtreservation.authentication.dto.RegisterRequest;
 import com.courtreservation.authentication.dto.TokenValidationResponse;
 import com.courtreservation.authentication.dto.UserResponse;
+import com.courtreservation.authentication.mapper.UserMapper;
 import com.courtreservation.authentication.model.User;
 import com.courtreservation.authentication.repository.UserRepository;
 import com.courtreservation.authentication.security.JwtTokenProvider;
@@ -13,9 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Set;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -26,21 +26,19 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final UserMapper userMapper;
 
     public UserResponse register(RegisterRequest request) {
         if (userRepository.existsByUserMail(request.getUserMail())) {
             throw new RuntimeException("El email ya está registrado");
         }
 
-        User user = User.builder()
-                .userName(request.getUserName())
-                .userMail(request.getUserMail())
-                .userPassword(passwordEncoder.encode(request.getUserPassword()))
-                .userRole(resolveRole(request.getUserRole()))
-                .build();
+        User user = userMapper.toUser(request);
+        user.setUserPassword(passwordEncoder.encode(request.getUserPassword()));
+        user.setUserRole(resolveRole(request.getUserRole()));
 
         User savedUser = userRepository.save(user);
-        return mapToUserResponse(savedUser);
+        return userMapper.toUserResponse(savedUser);
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -53,13 +51,7 @@ public class UserServiceImpl implements UserService {
 
         String token = jwtTokenProvider.generateToken(user.getUserId(), user.getUserMail(), user.getUserRole());
 
-        return LoginResponse.builder()
-                .token(token)
-                .userId(user.getUserId())
-                .userName(user.getUserName())
-                .userMail(user.getUserMail())
-                .userRole(user.getUserRole())
-                .build();
+        return userMapper.toLoginResponse(user, token);
     }
 
     public TokenValidationResponse validateSessionToken(String token) {
@@ -81,14 +73,11 @@ public class UserServiceImpl implements UserService {
     public UserResponse getUserById(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        return mapToUserResponse(user);
+        return userMapper.toUserResponse(user);
     }
 
     public List<UserResponse> getAllUsers() {
-        return userRepository.findAll()
-                .stream()
-                .map(this::mapToUserResponse)
-                .collect(Collectors.toList());
+        return userMapper.toUserResponses(userRepository.findAll());
     }
 
     public UserResponse updateUser(Long userId, RegisterRequest request) {
@@ -106,7 +95,7 @@ public class UserServiceImpl implements UserService {
         }
 
         User updatedUser = userRepository.save(user);
-        return mapToUserResponse(updatedUser);
+        return userMapper.toUserResponse(updatedUser);
     }
 
     public void deleteUser(Long userId) {
@@ -122,7 +111,7 @@ public class UserServiceImpl implements UserService {
 
         user.setUserRole(validateRole(newRole));
         User updatedUser = userRepository.save(user);
-        return mapToUserResponse(updatedUser);
+        return userMapper.toUserResponse(updatedUser);
     }
 
     private String resolveRole(String role) {
@@ -152,12 +141,4 @@ public class UserServiceImpl implements UserService {
         return normalizedToken;
     }
 
-    private UserResponse mapToUserResponse(User user) {
-        return UserResponse.builder()
-                .userId(user.getUserId())
-                .userName(user.getUserName())
-                .userMail(user.getUserMail())
-                .userRole(user.getUserRole())
-                .build();
-    }
 }
