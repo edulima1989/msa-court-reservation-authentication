@@ -19,6 +19,13 @@ jwt:
   secret: replace-this-64-byte-minimum-jwt-secret-before-production-use-2026-auth
   expiration: 86400000
 
+app:
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:4200
+      - http://localhost:8080
+
 springdoc:
   swagger-ui:
     enabled: true

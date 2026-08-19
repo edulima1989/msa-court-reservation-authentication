@@ -19,6 +19,7 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -57,6 +58,22 @@ class MsaCourtReservationAuthenticationApplicationTests {
   void allowsSwaggerEndpointsWithoutAuthentication() throws Exception {
     mockMvc.perform(get("/v3/api-docs"))
             .andExpect(status().isOk());
+  }
+
+  @Test
+  void appliesCorsForAllowedOrigins() throws Exception {
+    mockMvc.perform(options("/api/auth/login")
+                    .header(HttpHeaders.ORIGIN, "http://localhost:3000"))
+            .andExpect(status().isOk())
+            .andExpect(result -> assertEquals("http://localhost:3000",
+                    result.getResponse().getHeader("Access-Control-Allow-Origin")));
+  }
+
+  @Test
+  void rejectsCorsForDisallowedOrigins() throws Exception {
+    mockMvc.perform(options("/api/auth/login")
+                    .header(HttpHeaders.ORIGIN, "http://evil.example"))
+            .andExpect(status().isForbidden());
   }
 
   @Test
